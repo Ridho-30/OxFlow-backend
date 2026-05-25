@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model budget {
+  budget_id  Int       @id @default(autoincrement())
+  user_id    String    @unique @db.Uuid
+  income     Decimal   @default(0) @db.Decimal(15, 2)
+  threshold  Decimal   @default(0) @db.Decimal(15, 2)
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_budget_user_id")
+}
+
+model detail_transaction {
+  detail_transaction_id Int         @id @default(autoincrement())
+  transaction_id        Int
+  name_items            String      @db.VarChar(255)
+  quantity              Int         @default(1)
+  price                 Decimal     @db.Decimal(15, 2)
+  subtotal              Decimal     @db.Decimal(15, 2)
+  transaction           transaction @relation(fields: [transaction_id], references: [transaction_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([transaction_id], map: "idx_detail_transaction_transaction_id")
+}
+
+model kategori {
+  kategori_id Int           @id @default(autoincrement())
+  nama        String        @unique @db.VarChar(100)
+  icon        String?       @db.VarChar(50)
+  warna       String?       @db.VarChar(7)
+  is_default  Boolean?      @default(false)
+  deleted_at  DateTime?     @db.Timestamp(6)
+  transaction transaction[]
+}
+
+model laporan {
+  laporan_id     Int       @id @default(autoincrement())
+  user_id        String    @db.Uuid
+  month_generate String    @db.VarChar(50)
+  file_url       String
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  users          users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_laporan_user_id")
+}
+
+model transaction {
+  transaction_id     Int                  @id @default(autoincrement())
+  user_id            String               @db.Uuid
+  kategori_id        Int
+  total              Decimal              @db.Decimal(15, 2)
+  date               DateTime             @db.Date
+  foto_struk         String?
+  created_at         DateTime?            @default(now()) @db.Timestamp(6)
+  deleted_at         DateTime?            @db.Timestamp(6)
+  detail_transaction detail_transaction[]
+  kategori           kategori             @relation(fields: [kategori_id], references: [kategori_id], onDelete: NoAction, onUpdate: NoAction)
+  users              users                @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([date], map: "idx_transaction_date")
+  @@index([kategori_id], map: "idx_transaction_kategori_id")
+  @@index([user_id], map: "idx_transaction_user_id")
+}
+
+model users {
+  user_id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String        @db.VarChar(255)
+  email           String        @unique @db.VarChar(255)
+  password        String        @db.VarChar(255)
+  profile_picture String?
+  fcm_token       String?
+  created_at      DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?     @default(now()) @db.Timestamp(6)
+  deleted_at      DateTime?     @db.Timestamp(6)
+  budget          budget?
+  laporan         laporan[]
+  transaction     transaction[]
+
+  @@index([email], map: "idx_users_email")
+}

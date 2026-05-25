@@ -1,52 +1,90 @@
 const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const swaggerJsdoc = require('swagger-jsdoc');
-
+const env = require('./config/env');
+const prisma = require('./config/database');
 const app = express();
-const PORT = 3000;
+require('dotenv').config();
 
+const db = require('./config/database'); 
+// const app = express();
+
+app.use(cors());
 app.use(express.json());
 
-// 1. Konfigurasi Dasar Swagger
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: env.CORS_ORIGIN }));
+
+// Static folder (untuk foto profil atau laporan)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Swagger Configuration
 const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'OxFlow API Documentation',
-            version: '1.0.0',
-            description: 'Dokumentasi API untuk Proyek Akhir PAA - Aplikasi OxFlow',
-        },
-        servers: [
-            {
-                url: `http://localhost:${PORT}`,
-            },
-        ],
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'OxFlow API',
+      version: '1.0.0',
+      description: 'API Documentation for OxFlow Backend'
     },
-    // Mengatur tempat Swagger membaca dokumentasi API kamu nanti
-    apis: ['./app.js'], 
+    servers: [
+      {
+        url: `http://localhost:${env.PORT}`,
+        description: 'Development server'
+      }
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT'
+        }
+      }
+    }
+  },
+  apis: ['./routes/*.js']
 };
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 2. Hubungkan Swagger UI ke Route /api-docs
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Import Routes
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/users');
 
-/**
- * @openapi
- * /:
- * get:
- * summary: Endpoint Utama
- * description: Mengecek apakah server OxFlow backend sudah berjalan aktif.
- * responses:
- * 200:
- * description: Server berjalan dengan baik.
- */
+// Mount Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+
+// Root Route
 app.get('/', (req, res) => {
-    res.json({ message: "Welcome to OxFlow API! Buka /api-docs untuk melihat Swagger." });
+  res.json({ success: true, message: 'Welcome to OxFlow API' });
 });
 
-// 3. Jalankan Server
-app.listen(PORT, () => {
-    console.log(`Server OxFlow berjalan di http://localhost:${PORT}`);
-    console.log(`Dokumentasi Swagger siap dibuka di http://localhost:${PORT}/api-docs`);
+// 404 Route
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
+});
+
+// Start Server
+const server = app.listen(env.PORT, async () => {
+  console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
+  console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
+  
+  // // Test Database Connection
+  // try {
+  //   await prisma.$connect();
+  //   console.log('🔌 Database connection verified');
+  // } catch (err) {
+  //   console.error('❌ DATABASE ERROR FATAL:', err);
+  //   console.log('Menutup server karena database tidak siap...');
+  //   server.close(() => {
+  //     process.exit(1);
+  //   });
+  // }
 });
