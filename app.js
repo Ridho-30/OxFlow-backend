@@ -33,6 +33,10 @@ const swaggerOptions = {
     },
     servers: [
       {
+        url: 'https://oxflow-backend.vercel.app',
+        description: 'Production server (Vercel)'
+      },
+      {
         url: `http://localhost:${env.PORT}`,
         description: 'Development server'
       }
@@ -50,8 +54,15 @@ const swaggerOptions = {
   apis: ['./routes/*.js']
 };
 
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerOptionsUi = {
+  customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+  customJs: [
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js'
+  ]
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptionsUi));
 
 // Import Routes
 const authRoutes = require('./routes/auth');
@@ -88,3 +99,5 @@ const server = app.listen(env.PORT, async () => {
   //   });
   // }
 });
+
+module.exports = app;
