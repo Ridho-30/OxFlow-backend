@@ -2,6 +2,8 @@ const db = require('../config/database');
 const { successResponse, errorResponse } = require('../utils/helpers');
 const path = require('path');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 exports.getProfile = async (req, res) => {
   try {
@@ -84,42 +86,36 @@ exports.updateProfile = async (req, res) => {
   }
 };
 
+
+// Ganti fungsi uploadPhoto yang lama dengan ini:
 exports.uploadPhoto = async (req, res) => {
   try {
     const userId = req.user.user_id;
-
     if (!req.file) {
-      return errorResponse(
-        res,
-        400,
-        'Validasi gagal',
-        ['Foto profil wajib diunggah']
-      );
+      return errorResponse(res, 400, 'Validasi gagal', ['Foto profil wajib diunggah']);
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // Upload ke Supabase Storage
+    const fileName = `${userId}-${Date.now()}.png`;
+    const { error } = await supabase.storage
+      .from('profile-pictures') // Pastikan nama bucket ini SAMA dengan di dashboard Supabase
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
 
+    if (error) throw error;
+
+    // Ambil URL publiknya
+    const { data } = supabase.storage
+      .from('profile-pictures')
+      .getPublicUrl(fileName);
+
+    // Update database
     const user = await db.users.update({
-      where: {
-        user_id: userId
-      },
-      data: {
-        profile_picture: fileUrl,
-        updated_at: new Date()
-      },
-      select: {
-        user_id: true,
-        profile_picture: true
-      }
+      where: { user_id: userId },
+      data: { profile_picture: data.publicUrl, updated_at: new Date() },
+      select: { user_id: true, profile_picture: true }
     });
 
-    return successResponse(
-      res,
-      200,
-      'Foto profil berhasil diunggah',
-      user
-    );
-
+    return successResponse(res, 200, 'Foto profil berhasil diunggah', user);
   } catch (error) {
     console.error(error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
