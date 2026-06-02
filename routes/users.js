@@ -9,7 +9,7 @@ const fs = require('fs');
 // Create uploads folder if it doesn't exist
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+  // fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 // Configure Multer
