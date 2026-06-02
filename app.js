@@ -1,19 +1,23 @@
-require('dotenv').config(); // Paling atas agar env terbaca sejak awal
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-
 const env = require('./config/env');
 const prisma = require('./config/database');
-
 const app = express();
 
-// Middleware Global
-app.use(cors({ origin: env.CORS_ORIGIN || '*' }));
+const db = require('./config/database'); 
+// const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: env.CORS_ORIGIN }));
 
 // Static folder (untuk foto profil atau laporan)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -29,11 +33,11 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'https://oxflow-backend.vercel.app',
+        url: 'https://ox-flow-backend.vercel.app',
         description: 'Production server (Vercel)'
       },
       {
-        url: env.PORT ? `http://localhost:${env.PORT}` : 'http://localhost:3000',
+        url: `http://localhost:${env.PORT}`,
         description: 'Development server'
       }
     ],
@@ -50,9 +54,6 @@ const swaggerOptions = {
   apis: ['./routes/*.js']
 };
 
-// PERBAIKAN: Menginisialisasi swaggerDocs sebelum digunakan
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-
 const swaggerOptionsUi = {
   customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
   customJs: [
@@ -61,7 +62,6 @@ const swaggerOptionsUi = {
   ]
 };
 
-// Route untuk dokumentasi API
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptionsUi));
 
 // Import Routes
@@ -82,5 +82,22 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
 });
 
-// Export app untuk serverless Vercel
+// Start Server
+// const server = app.listen(env.PORT, async () => {
+//   console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
+//   console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
+  
+//   // // Test Database Connection
+//   // try {
+//   //   await prisma.$connect();
+//   //   console.log('🔌 Database connection verified');
+//   // } catch (err) {
+//   //   console.error('❌ DATABASE ERROR FATAL:', err);
+//   //   console.log('Menutup server karena database tidak siap...');
+//   //   server.close(() => {
+//   //     process.exit(1);
+//   //   });
+//   // }
+// });
+
 module.exports = app;
