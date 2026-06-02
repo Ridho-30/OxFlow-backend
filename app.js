@@ -1,23 +1,19 @@
+require('dotenv').config(); // Paling atas agar env terbaca sejak awal
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+
 const env = require('./config/env');
 const prisma = require('./config/database');
+
 const app = express();
-require('dotenv').config();
 
-const db = require('./config/database'); 
-// const app = express();
-
-app.use(cors());
-app.use(express.json());
-
-// Middleware
+// Middleware Global
+app.use(cors({ origin: env.CORS_ORIGIN || '*' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: env.CORS_ORIGIN }));
 
 // Static folder (untuk foto profil atau laporan)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -37,7 +33,7 @@ const swaggerOptions = {
         description: 'Production server (Vercel)'
       },
       {
-        url: `http://localhost:${env.PORT}`,
+        url: env.PORT ? `http://localhost:${env.PORT}` : 'http://localhost:3000',
         description: 'Development server'
       }
     ],
@@ -54,6 +50,9 @@ const swaggerOptions = {
   apis: ['./routes/*.js']
 };
 
+// PERBAIKAN: Menginisialisasi swaggerDocs sebelum digunakan
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
 const swaggerOptionsUi = {
   customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
   customJs: [
@@ -62,6 +61,7 @@ const swaggerOptionsUi = {
   ]
 };
 
+// Route untuk dokumentasi API
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptionsUi));
 
 // Import Routes
@@ -82,22 +82,5 @@ app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
 });
 
-// Start Server
-// const server = app.listen(env.PORT, async () => {
-//   console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
-//   console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
-  
-//   // // Test Database Connection
-//   // try {
-//   //   await prisma.$connect();
-//   //   console.log('🔌 Database connection verified');
-//   // } catch (err) {
-//   //   console.error('❌ DATABASE ERROR FATAL:', err);
-//   //   console.log('Menutup server karena database tidak siap...');
-//   //   server.close(() => {
-//   //     process.exit(1);
-//   //   });
-//   // }
-// });
-
+// Export app untuk serverless Vercel
 module.exports = app;
