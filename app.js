@@ -32,14 +32,8 @@ const swaggerOptions = {
       description: 'API Documentation for OxFlow Backend'
     },
     servers: [
-      {
-        url: 'https://ox-flow-backend.vercel.app',
-        description: 'Production server (Vercel)'
-      },
-      {
-        url: `http://localhost:${env.PORT}`,
-        description: 'Development server'
-      }
+      { url: 'https://ox-flow-backend.vercel.app', description: 'Production server' },
+      { url: 'http://localhost:3000', description: 'Development server' }
     ],
     components: {
       securitySchemes: {
@@ -54,6 +48,9 @@ const swaggerOptions = {
   apis: ['./routes/*.js']
 };
 
+// 2. INISIALISASI swaggerDocs DI SINI (Wajib sebelum digunakan di bawah)
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
 const swaggerOptionsUi = {
   customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
   customJs: [
@@ -62,6 +59,7 @@ const swaggerOptionsUi = {
   ]
 };
 
+// 3. BARU PASANG KE ROUTE setelah variabel di atas siap
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptionsUi));
 
 // Import Routes
