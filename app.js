@@ -7,6 +7,7 @@ const swaggerUi = require('swagger-ui-express');
 const env = require('./config/env');
 const db = require('./config/database');
 const app = express();
+app.use(cors());
 
 // Middleware
 app.use(cors({ origin: env.CORS_ORIGIN }));
@@ -79,21 +80,21 @@ app.use((req, res) => {
 });
 
 // Start Server
-// const server = app.listen(env.PORT, async () => {
-//   console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
-//   console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
+const server = app.listen(env.PORT, async () => {
+  console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
+  console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
 
-//   // // Test Database Connection
-//   // try {
-//   //   await prisma.$connect();
-//   //   console.log('🔌 Database connection verified');
-//   // } catch (err) {
-//   //   console.error('❌ DATABASE ERROR FATAL:', err);
-//   //   console.log('Menutup server karena database tidak siap...');
-//   //   server.close(() => {
-//   //     process.exit(1);
-//   //   });
-//   // }
-// });
+  // // Test Database Connection
+  // try {
+  //   await prisma.$connect();
+  //   console.log('🔌 Database connection verified');
+  // } catch (err) {
+  //   console.error('❌ DATABASE ERROR FATAL:', err);
+  //   console.log('Menutup server karena database tidak siap...');
+  //   server.close(() => {
+  //     process.exit(1);
+  //   });
+  // }
+});
 
 module.exports = app;
