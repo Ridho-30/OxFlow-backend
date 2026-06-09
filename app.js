@@ -5,19 +5,13 @@ const path = require('path');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const env = require('./config/env');
-const prisma = require('./config/database');
+const db = require('./config/database');
 const app = express();
 
-const db = require('./config/database'); 
-// const app = express();
-
-app.use(cors());
-app.use(express.json());
-
 // Middleware
+app.use(cors({ origin: env.CORS_ORIGIN }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: env.CORS_ORIGIN }));
 
 // Static folder (untuk foto profil atau laporan)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -32,8 +26,8 @@ const swaggerOptions = {
       description: 'API Documentation for OxFlow Backend'
     },
     servers: [
-      { url: 'https://ox-flow-backend.vercel.app', description: 'Production server' },
-      { url: 'http://localhost:3000', description: 'Development server' }
+      { url: 'http://localhost:3000', description: 'Development server' },
+      { url: 'https://ox-flow-backend.vercel.app', description: 'Production server' }
     ],
     components: {
       securitySchemes: {
@@ -65,10 +59,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOption
 // Import Routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
+const transactionRoutes = require('./routes/transactions');
+const categoryRoutes = require('./routes/categories');
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Root Route
 app.get('/', (req, res) => {
@@ -84,7 +82,7 @@ app.use((req, res) => {
 // const server = app.listen(env.PORT, async () => {
 //   console.log(`🚀 OxFlow API running on http://localhost:${env.PORT}`);
 //   console.log(`📚 Swagger docs: http://localhost:${env.PORT}/api-docs`);
-  
+
 //   // // Test Database Connection
 //   // try {
 //   //   await prisma.$connect();

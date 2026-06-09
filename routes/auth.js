@@ -59,6 +59,7 @@ router.post('/register', authController.register);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: user@gmail.com
  *               password:
  *                 type: string
  *     responses:
