@@ -26,8 +26,8 @@ const swaggerOptions = {
       description: 'API Documentation for OxFlow Backend'
     },
     servers: [
-      { url: 'http://localhost:3000', description: 'Development server' },
-      { url: 'https://ox-flow-backend.vercel.app', description: 'Production server' }
+      { url: 'https://ox-flow-backend.vercel.app', description: 'Production server' },
+      { url: 'http://localhost:3000', description: 'Development server' }
     ],
     components: {
       securitySchemes: {
