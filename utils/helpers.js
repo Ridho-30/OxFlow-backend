@@ -214,7 +214,8 @@ const generateReportPDF = (data) => {
       doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
       doc.moveDown(0.8);
 
-      doc.fontSize(14).font('Helvetica-Bold').text('Breakdown Per Kategori');
+      doc.x = 50;
+      doc.fontSize(14).font('Helvetica-Bold').text('Breakdown Per Kategori', 50, doc.y);
       doc.moveDown(0.5);
 
       if (data.categoryBreakdown && data.categoryBreakdown.length > 0) {

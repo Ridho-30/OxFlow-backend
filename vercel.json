@@ -16,6 +16,10 @@
     {
       "path": "/api/auth/login",
       "schedule": "0 0 */3 * *"
+    },
+    {
+      "path": "/api/laporan/cron/generate-laporan",
+      "schedule": "59 23 * * *"
     }
   ]
 }

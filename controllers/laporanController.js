@@ -56,11 +56,11 @@ exports.exportLaporan = async (req, res) => {
     const monthInt = parseInt(month);
     const yearInt = parseInt(year);
 
-    // Check duplicate: cek apakah laporan sudah pernah dibuat untuk bulan+tahun ini
+    // Cek duplicate: jika laporan sudah ada, hapus record lama (jangan return error)
     const startOfMonth = new Date(yearInt, monthInt - 1, 1);
     const endOfMonth = new Date(yearInt, monthInt, 0, 23, 59, 59, 999);
 
-    const existingLaporan = await db.laporan.findFirst({
+    await db.laporan.deleteMany({
       where: {
         user_id: userId,
         report_date: {
@@ -69,15 +69,6 @@ exports.exportLaporan = async (req, res) => {
         }
       }
     });
-
-    if (existingLaporan) {
-      const periodLabel = `${getMonthName(monthInt)} ${yearInt}`;
-      return errorResponse(
-        res,
-        400,
-        `Laporan untuk ${periodLabel} sudah pernah dibuat sebelumnya. Hapus laporan lama terlebih dahulu jika ingin membuat ulang.`
-      );
-    }
 
     // ─── Gather Data ───
 
@@ -174,13 +165,17 @@ exports.exportLaporan = async (req, res) => {
     const fileUrl = urlData.publicUrl;
 
     // ─── Insert to DB ───
-    const reportDate = new Date(yearInt, monthInt - 1, new Date().getDate());
+    const today = new Date();
+    const lastDayOfMonth = new Date(yearInt, monthInt, 0).getDate();
+    const reportDate = new Date(yearInt, monthInt - 1, Math.min(today.getDate(), lastDayOfMonth));
 
     const laporan = await db.laporan.create({
       data: {
         user_id: userId,
         report_date: reportDate,
-        file_url: fileUrl
+        file_url: fileUrl,
+        income_snapshot: income,
+        threshold_snapshot: threshold
       }
     });
 
@@ -250,6 +245,8 @@ exports.getHistory = async (req, res) => {
         period_label: `${getMonthName(m)} ${y}`,
         file_url: lap.file_url,
         file_name: `Laporan_Keuangan_${getMonthName(m)}_${y}.pdf`,
+        income_snapshot: lap.income_snapshot ? Number(lap.income_snapshot) : null,
+        threshold_snapshot: lap.threshold_snapshot ? Number(lap.threshold_snapshot) : null,
         created_at: lap.created_at
       };
     });
@@ -270,6 +267,176 @@ exports.getHistory = async (req, res) => {
     });
   } catch (error) {
     console.error('ERROR getHistory:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/laporan/cron/generate-laporan — Cron job auto-generate
+// ─────────────────────────────────────────────────────────────
+exports.cronGenerateLaporan = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+      return res.status(401).json({
+        success: false,
+        message: 'Akses ditolak. Token cron tidak valid.'
+      });
+    }
+
+    const now = new Date();
+    
+    // Hanya jalankan pada hari terakhir setiap bulan jika tidak dipanggil manual
+    const isManual = req.body.month || req.query.month || req.body.year || req.query.year;
+    if (!isManual) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      if (tomorrow.getDate() !== 1) {
+        return res.status(200).json({
+          success: true,
+          message: 'Bukan hari terakhir bulan ini. Cron skipped.'
+        });
+      }
+    }
+
+    const monthInt = parseInt(req.body.month || req.query.month || (now.getMonth() + 1));
+    const yearInt = parseInt(req.body.year || req.query.year || now.getFullYear());
+
+    const startOfMonth = new Date(yearInt, monthInt - 1, 1);
+    const endOfMonth = new Date(yearInt, monthInt, 0, 23, 59, 59, 999);
+    const periodLabel = `${getMonthName(monthInt)} ${yearInt}`;
+
+    // Get all users who are not deleted
+    const users = await db.users.findMany({
+      where: { deleted_at: null }
+    });
+
+    const results = [];
+
+    for (const user of users) {
+      try {
+        const userId = user.user_id;
+
+        // Get budget
+        const budget = await db.budget.findUnique({
+          where: { user_id: userId }
+        });
+
+        const income = budget ? Number(budget.income) : 0;
+        const threshold = budget ? Number(budget.threshold) : 0;
+
+        // Get transactions
+        const transactions = await db.transaction.findMany({
+          where: {
+            user_id: userId,
+            deleted_at: null,
+            date: { gte: startOfMonth, lte: endOfMonth }
+          },
+          include: {
+            categories: { select: { name_category: true } }
+          },
+          orderBy: { date: 'asc' }
+        });
+
+        const totalSpent = transactions.reduce((acc, t) => acc + Number(t.total), 0);
+        const remaining = income - totalSpent;
+        const percentage = income > 0 ? Math.round((totalSpent / income) * 10000) / 100 : 0;
+        const { status } = calculateBudgetStatus(totalSpent, threshold);
+
+        // Group categories for PDF
+        const categoryMap = {};
+        for (const trx of transactions) {
+          const catName = trx.categories?.name_category || 'Lainnya';
+          if (!categoryMap[catName]) {
+            categoryMap[catName] = { total_spent: 0 };
+          }
+          categoryMap[catName].total_spent += Number(trx.total);
+        }
+
+        const categoryBreakdown = Object.entries(categoryMap).map(([name, data]) => ({
+          kategori_nama: name,
+          total_spent: data.total_spent,
+          percentage: totalSpent > 0 ? Math.round((data.total_spent / totalSpent) * 10000) / 100 : 0
+        }));
+        categoryBreakdown.sort((a, b) => b.total_spent - a.total_spent);
+
+        const transactionsForPDF = transactions.map((t) => ({
+          date: t.date,
+          category_name: t.categories?.name_category || 'Lainnya',
+          total: Number(t.total)
+        }));
+
+        // Generate PDF
+        const pdfBuffer = await generateReportPDF({
+          userName: user.name,
+          periodLabel,
+          income,
+          totalSpent,
+          remaining,
+          percentage,
+          status,
+          transactions: transactionsForPDF,
+          categoryBreakdown
+        });
+
+        // Upload to Supabase Storage
+        const fileName = `laporan-${yearInt}-${String(monthInt).padStart(2, '0')}-${userId}.pdf`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(fileName, pdfBuffer, {
+            contentType: 'application/pdf',
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error(`Gagal upload laporan untuk user ${userId}:`, uploadError);
+          results.push({ userId, name: user.name, status: 'error', error: 'Upload failed' });
+          continue;
+        }
+
+        const { data: urlData } = supabase.storage
+          .from(BUCKET_NAME)
+          .getPublicUrl(fileName);
+
+        const fileUrl = urlData.publicUrl;
+
+        // Hapus laporan lama jika ada
+        await db.laporan.deleteMany({
+          where: {
+            user_id: userId,
+            report_date: { gte: startOfMonth, lte: endOfMonth }
+          }
+        });
+
+        // Simpan laporan baru dengan snapshot
+        const lastDayOfMonth = new Date(yearInt, monthInt, 0).getDate();
+        const reportDate = new Date(yearInt, monthInt - 1, Math.min(now.getDate(), lastDayOfMonth));
+
+        await db.laporan.create({
+          data: {
+            user_id: userId,
+            report_date: reportDate,
+            file_url: fileUrl,
+            income_snapshot: income,
+            threshold_snapshot: threshold
+          }
+        });
+
+        results.push({ userId, name: user.name, status: 'success' });
+      } catch (err) {
+        console.error(`Error generating report for user ${user.user_id}:`, err);
+        results.push({ userId: user.user_id, name: user.name, status: 'error', error: err.message });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Cron job selesai. Diproses: ${users.length} user.`,
+      data: results
+    });
+  } catch (error) {
+    console.error('ERROR cronGenerateLaporan:', error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
   }
 };

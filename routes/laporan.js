@@ -203,4 +203,39 @@ router.post('/export', authMiddleware, laporanController.exportLaporan);
  */
 router.get('/history', authMiddleware, laporanController.getHistory);
 
+/**
+ * @swagger
+ * /api/laporan/cron/generate-laporan:
+ *   post:
+ *     summary: Cron job untuk generate laporan bulanan otomatis bagi seluruh user
+ *     description: >
+ *       Mengecek dan men-generate laporan untuk seluruh user aktif.
+ *       Memerlukan header Authorization Bearer <CRON_SECRET>.
+ *       Dapat menerima payload month & year opsional untuk manual trigger / backfill.
+ *     tags: [Laporan]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               month:
+ *                 type: integer
+ *                 description: Bulan yang digenerate. Default bulan sekarang.
+ *                 example: 6
+ *               year:
+ *                 type: integer
+ *                 description: Tahun yang digenerate. Default tahun sekarang.
+ *                 example: 2026
+ *     responses:
+ *       200:
+ *         description: Laporan berhasil digenerate untuk semua user
+ *       401:
+ *         description: Token cron tidak valid
+ */
+router.post('/cron/generate-laporan', laporanController.cronGenerateLaporan);
+
 module.exports = router;
