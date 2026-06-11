@@ -62,12 +62,18 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const transactionRoutes = require('./routes/transactions');
 const categoryRoutes = require('./routes/categories');
+const budgetRoutes = require('./routes/budget');
+const analyticsRoutes = require('./routes/analytics');
+const laporanRoutes = require('./routes/laporan');
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/budget', budgetRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/laporan', laporanRoutes);
 
 // Root Route
 app.get('/', (req, res) => {
