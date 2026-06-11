@@ -83,7 +83,7 @@ exports.updateCategory = async (req, res) => {
   try {
     const ADMIN_ID = process.env.ADMIN_ID;
     if (req.user.user_id !== ADMIN_ID) {
-      return errorResponse(res, 403, 'Akses ditolak. Hanya admin yang dapat membuat kategori.');
+      return errorResponse(res, 403, 'Akses ditolak. Hanya admin yang dapat mengupdate kategori.');
     }
 
     const categoryId = parseInt(req.params.id);
@@ -148,7 +148,7 @@ exports.deleteCategory = async (req, res) => {
   try {
     const ADMIN_ID = process.env.ADMIN_ID;
     if (req.user.user_id !== ADMIN_ID) {
-      return errorResponse(res, 403, 'Akses ditolak. Hanya admin yang dapat membuat kategori.');
+      return errorResponse(res, 403, 'Akses ditolak. Hanya admin yang dapat menghapus kategori.');
     }
 
     const categoryId = parseInt(req.params.id);
