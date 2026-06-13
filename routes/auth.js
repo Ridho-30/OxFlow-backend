@@ -112,9 +112,47 @@ router.post('/logout', authMiddleware, authController.logout);
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /api/auth/change-password:
  *   patch:
- *     summary: Reset password
+ *     summary: Ubah password dengan password lama
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - old_password
+ *               - new_password
+ *             properties:
+ *               old_password:
+ *                 type: string
+ *                 example: "password_lama123"
+ *               new_password:
+ *                 type: string
+ *                 example: "password_baru456"
+ *     responses:
+ *       200:
+ *         description: Password berhasil diubah
+ *       400:
+ *         description: Validasi gagal atau password lama tidak sesuai
+ *       401:
+ *         description: Token tidak valid
+ */
+router.patch('/change-password', authMiddleware, authController.changePassword);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request reset password via email
+ *     description: >
+ *       User yang lupa password bisa request reset.
+ *       Backend akan kirim email berisi link reset password.
+ *       Link berlaku selama 15 menit.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -124,19 +162,55 @@ router.post('/logout', authMiddleware, authController.logout);
  *             type: object
  *             required:
  *               - email
- *               - oldPassword
- *               - newPassword
  *             properties:
  *               email:
  *                 type: string
- *               oldPassword:
- *                 type: string
- *               newPassword:
- *                 type: string
+ *                 format: email
+ *                 example: "user@gmail.com"
  *     responses:
  *       200:
- *         description: Password berhasil diubah
+ *         description: Email reset password berhasil dikirim
+ *       400:
+ *         description: Email tidak valid
  */
-router.patch('/reset-password', authController.resetPassword);
+router.post('/forgot-password', authController.forgotPassword);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password dengan token dari email
+ *     description: >
+ *       Endpoint untuk reset password menggunakan token yang dikirim via email.
+ *       Token diperoleh dari link di email yang dikirim oleh endpoint /forgot-password.
+ *       Token berlaku 15 menit.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - new_password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Token dari email reset password
+ *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *               new_password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "password_baru123"
+ *     responses:
+ *       200:
+ *         description: Password berhasil direset
+ *       400:
+ *         description: Validasi gagal
+ *       401:
+ *         description: Token tidak valid atau sudah kadaluarsa
+ */
+router.post('/reset-password', authController.resetPassword);
 
 module.exports = router;
