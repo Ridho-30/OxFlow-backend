@@ -56,10 +56,27 @@ exports.exportLaporan = async (req, res) => {
     const monthInt = parseInt(month);
     const yearInt = parseInt(year);
 
-    // Cek duplicate: jika laporan sudah ada, hapus record lama (jangan return error)
     const startOfMonth = new Date(yearInt, monthInt - 1, 1);
     const endOfMonth = new Date(yearInt, monthInt, 0, 23, 59, 59, 999);
 
+    // Get transactions for this month+year
+    const transactions = await db.transaction.findMany({
+      where: {
+        user_id: userId,
+        deleted_at: null,
+        date: { gte: startOfMonth, lte: endOfMonth }
+      },
+      include: {
+        categories: { select: { name_category: true } }
+      },
+      orderBy: { date: 'asc' }
+    });
+
+    if (transactions.length === 0) {
+      return errorResponse(res, 400, 'Validasi gagal', ['Tidak ada transaksi pada periode ini, laporan tidak bisa dibuat']);
+    }
+
+    // Cek duplicate: jika laporan sudah ada, hapus record lama (jangan return error)
     await db.laporan.deleteMany({
       where: {
         user_id: userId,
@@ -85,19 +102,6 @@ exports.exportLaporan = async (req, res) => {
 
     const income = budget ? Number(budget.income) : 0;
     const threshold = budget ? Number(budget.threshold) : 0;
-
-    // Get transactions for this month+year
-    const transactions = await db.transaction.findMany({
-      where: {
-        user_id: userId,
-        deleted_at: null,
-        date: { gte: startOfMonth, lte: endOfMonth }
-      },
-      include: {
-        categories: { select: { name_category: true } }
-      },
-      orderBy: { date: 'asc' }
-    });
 
     const totalSpent = transactions.reduce((acc, t) => acc + Number(t.total), 0);
     const remaining = income - totalSpent;
@@ -337,6 +341,11 @@ exports.cronGenerateLaporan = async (req, res) => {
           },
           orderBy: { date: 'asc' }
         });
+
+        if (transactions.length === 0) {
+          results.push({ userId, name: user.name, status: 'skipped', reason: 'Tidak ada transaksi' });
+          continue;
+        }
 
         const totalSpent = transactions.reduce((acc, t) => acc + Number(t.total), 0);
         const remaining = income - totalSpent;

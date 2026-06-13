@@ -2,23 +2,6 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-// Create uploads folder if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  // fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Configure Multer
-const storage = multer.memoryStorage();
-
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
 
 /**
  * @swagger
@@ -60,35 +43,14 @@ router.get('/profile', authMiddleware, userController.getProfile);
  *             properties:
  *               name:
  *                 type: string
+ *               profile_picture:
+ *                 type: string
+ *                 format: url
  *     responses:
  *       200:
  *         description: Profil berhasil diupdate
  */
 router.put('/profile', authMiddleware, userController.updateProfile);
-
-/**
- * @swagger
- * /api/users/profile/photo:
- *   post:
- *     summary: Upload foto profil
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         multipart/form-data:
- *           schema:
- *             type: object
- *             properties:
- *               photo:
- *                 type: string
- *                 format: binary
- *     responses:
- *       200:
- *         description: Foto profil berhasil diunggah
- */
-router.post('/profile/photo', authMiddleware, upload.single('photo'), userController.uploadPhoto);
 
 /**
  * @swagger

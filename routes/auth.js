@@ -31,6 +31,7 @@ const authMiddleware = require('../middleware/auth');
  *                 type: string
  *               email:
  *                 type: string
+ *                 example: user@gmail.com
  *               password:
  *                 type: string
  *     responses:

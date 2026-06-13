@@ -44,7 +44,7 @@ exports.getProfile = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { name, fcm_token } = req.body;
+    const { name, fcm_token, profile_picture } = req.body;
 
     if (!name) {
       return errorResponse(
@@ -62,6 +62,7 @@ exports.updateProfile = async (req, res) => {
       data: {
         name,
         fcm_token: fcm_token || undefined,
+        ...(profile_picture !== undefined && { profile_picture }),
         updated_at: new Date()
       },
       select: {
@@ -87,7 +88,6 @@ exports.updateProfile = async (req, res) => {
 };
 
 
-// Ganti fungsi uploadPhoto yang lama dengan ini:
 exports.uploadPhoto = async (req, res) => {
   try {
     const userId = req.user.user_id;
