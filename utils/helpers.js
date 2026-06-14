@@ -54,7 +54,8 @@ const isValidHexColor = (color) => {
 const isNotFutureDate = (date) => {
   const input = new Date(date);
   const today = new Date();
-  today.setHours(23, 59, 59, 999); // bandingkan sampai akhir hari ini
+  today.setDate(today.getDate() + 1); // Tambahan toleransi 1 hari untuk perbedaan zona waktu (Misal: WIB vs UTC)
+  today.setHours(23, 59, 59, 999); // bandingkan sampai akhir hari
   return input <= today;
 };
 
