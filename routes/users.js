@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * @swagger
@@ -9,6 +11,30 @@ const authMiddleware = require('../middleware/auth');
  *   name: Users
  *   description: User management
  */
+
+/**
+ * @swagger
+ * /api/users/profile/photo:
+ *   post:
+ *     summary: Upload foto profil user
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               photo:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Foto profil berhasil diunggah
+ */
+router.post('/profile/photo', authMiddleware, upload.single('photo'), userController.uploadPhoto);
 
 /**
  * @swagger
