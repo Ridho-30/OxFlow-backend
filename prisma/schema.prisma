@@ -59,6 +59,7 @@ model transaction {
   transaction_id     Int                  @id @default(autoincrement())
   user_id            String               @db.Uuid
   category_id        Int
+  nama_toko          String?              @db.VarChar(255)
   total              Decimal              @db.Decimal(15, 2)
   date               DateTime             @db.Date
   foto_struk         String?

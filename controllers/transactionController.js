@@ -74,7 +74,7 @@ const validateTransactionPayload = (body) => {
 exports.createTransaction = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { category_id, total, date, foto_struk, details } = req.body;
+    const { category_id, total, date, foto_struk, nama_toko, details } = req.body;  // ← tambah nama_toko
 
     const errors = validateTransactionPayload(req.body);
     if (errors.length > 0) {
@@ -90,18 +90,19 @@ exports.createTransaction = async (req, res) => {
     }
 
     const result = await db.$transaction(async (tx) => {
-      // 1. Insert transaction
+      // 1. Insert transaction (tambah nama_toko)
       const trx = await tx.transaction.create({
         data: {
           user_id: userId,
           category_id: parseInt(category_id),
           total: Number(total),
           date: new Date(date),
-          foto_struk: foto_struk || null
+          foto_struk: foto_struk || null,
+          nama_toko: nama_toko ? String(nama_toko).trim() : null  // ← TAMBAH INI
         }
       });
 
-      // 2. Insert detail items
+      // 2. Insert detail items (sama seperti sebelumnya)
       const detailData = details.map((d) => ({
         transaction_id: trx.transaction_id,
         name_items: String(d.name_items).trim(),
@@ -127,6 +128,7 @@ exports.createTransaction = async (req, res) => {
       total: Number(result.trx.total),
       date: result.trx.date,
       foto_struk: result.trx.foto_struk,
+      nama_toko: result.trx.nama_toko,  // ← TAMBAH INI
       created_at: result.trx.created_at,
       details: buildDetailItems(result.insertedDetails)
     };
@@ -178,6 +180,7 @@ exports.getAllTransactions = async (req, res) => {
         total: true,
         date: true,
         foto_struk: true,
+        nama_toko: true,  // ← TAMBAH INI
         created_at: true,
         _count: { select: { detail_transaction: true } }
       },
@@ -193,6 +196,7 @@ exports.getAllTransactions = async (req, res) => {
       total: Number(t.total),
       date: t.date,
       foto_struk: t.foto_struk,
+      nama_toko: t.nama_toko,  // ← TAMBAH INI
       created_at: t.created_at,
       item_count: t._count.detail_transaction
     }));
@@ -255,6 +259,7 @@ exports.getTransactionDetail = async (req, res) => {
       total: Number(trx.total),
       date: trx.date,
       foto_struk: trx.foto_struk,
+      nama_toko: trx.nama_toko,  // ← TAMBAH INI
       created_at: trx.created_at,
       details: buildDetailItems(trx.detail_transaction)
     };
@@ -285,7 +290,7 @@ exports.updateTransaction = async (req, res) => {
       return errorResponse(res, 404, 'Transaksi tidak ditemukan');
     }
 
-    const { category_id, total, date, foto_struk, details } = req.body;
+    const { category_id, total, date, foto_struk, nama_toko, details } = req.body;  // ← tambah nama_toko
 
     const errors = validateTransactionPayload(req.body);
     if (errors.length > 0) {
@@ -301,23 +306,23 @@ exports.updateTransaction = async (req, res) => {
     }
 
     const result = await db.$transaction(async (tx) => {
-      // 1. Update header
+      // 1. Update header (tambah nama_toko)
       const updatedTrx = await tx.transaction.update({
         where: { transaction_id: transactionId },
         data: {
           category_id: parseInt(category_id),
           total: Number(total),
           date: new Date(date),
-          foto_struk: foto_struk ?? null
+          foto_struk: foto_struk ?? null,
+          nama_toko: nama_toko ? String(nama_toko).trim() : null  // ← TAMBAH INI
         }
       });
 
-      // 2. Pisahkan existing vs new
+      // 2-6. (sama seperti sebelumnya)
       const incomingWithId = details.filter((d) => d.detail_transaction_id);
       const incomingWithoutId = details.filter((d) => !d.detail_transaction_id);
       const incomingIds = incomingWithId.map((d) => d.detail_transaction_id);
 
-      // 3. Hapus detail yang tidak ada di request
       await tx.detail_transaction.deleteMany({
         where: {
           transaction_id: transactionId,
@@ -325,7 +330,6 @@ exports.updateTransaction = async (req, res) => {
         }
       });
 
-      // 4. Update existing detail items
       for (const d of incomingWithId) {
         await tx.detail_transaction.update({
           where: { detail_transaction_id: d.detail_transaction_id },
@@ -338,7 +342,6 @@ exports.updateTransaction = async (req, res) => {
         });
       }
 
-      // 5. Insert new detail items
       if (incomingWithoutId.length > 0) {
         await tx.detail_transaction.createMany({
           data: incomingWithoutId.map((d) => ({
@@ -351,7 +354,6 @@ exports.updateTransaction = async (req, res) => {
         });
       }
 
-      // 6. Fetch final details
       const finalDetails = await tx.detail_transaction.findMany({
         where: { transaction_id: transactionId }
       });
@@ -366,6 +368,7 @@ exports.updateTransaction = async (req, res) => {
       total: Number(result.updatedTrx.total),
       date: result.updatedTrx.date,
       foto_struk: result.updatedTrx.foto_struk,
+      nama_toko: result.updatedTrx.nama_toko,  // ← TAMBAH INI
       created_at: result.updatedTrx.created_at,
       details: buildDetailItems(result.finalDetails)
     };

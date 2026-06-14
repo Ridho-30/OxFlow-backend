@@ -44,6 +44,10 @@ const authMiddleware = require('../middleware/auth');
  *                 type: string
  *                 nullable: true
  *                 example: "https://bucket.example.com/struk-123.jpg"
+ *               nama_toko:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "Indomaret Jember"
  *               details:
  *                 type: array
  *                 minItems: 1
@@ -54,7 +58,6 @@ const authMiddleware = require('../middleware/auth');
  *                     - name_items
  *                     - quantity
  *                     - price
- *                     - subtotal
  *                   properties:
  *                     name_items:
  *                       type: string
@@ -65,14 +68,12 @@ const authMiddleware = require('../middleware/auth');
  *                     price:
  *                       type: number
  *                       example: 7000
- *                     subtotal:
- *                       type: number
- *                       example: 14000
  *     responses:
  *       201:
  *         description: Transaksi berhasil dibuat
  *       400:
  *         description: Validasi gagal
+ *
  *       401:
  *         description: Token tidak valid atau tidak ditemukan
  */
@@ -149,7 +150,6 @@ router.get('/', authMiddleware, transactionController.getAllTransactions);
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID transaksi
  *         example: 1
  *     responses:
  *       200:
@@ -175,8 +175,6 @@ router.get('/:id', authMiddleware, transactionController.getTransactionDetail);
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID transaksi
- *         example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -191,38 +189,20 @@ router.get('/:id', authMiddleware, transactionController.getTransactionDetail);
  *             properties:
  *               category_id:
  *                 type: integer
- *                 example: 2
  *               total:
  *                 type: number
- *                 example: 55000
  *               date:
  *                 type: string
  *                 format: date
- *                 example: "2026-05-23"
  *               foto_struk:
  *                 type: string
  *                 nullable: true
+ *               nama_toko:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "Alfamart Jember"
  *               details:
  *                 type: array
- *                 description: >
- *                   detail_transaction_id ada = UPDATE,
- *                   tidak ada = INSERT baru,
- *                   tidak disertakan = DELETE.
- *                 items:
- *                   type: object
- *                   properties:
- *                     detail_transaction_id:
- *                       type: integer
- *                       nullable: true
- *                       description: Isi untuk update, kosongkan untuk insert baru
- *                     name_items:
- *                       type: string
- *                     quantity:
- *                       type: integer
- *                     price:
- *                       type: number
- *                     subtotal:
- *                       type: number
  *     responses:
  *       200:
  *         description: Transaksi berhasil diupdate
