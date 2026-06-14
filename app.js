@@ -65,6 +65,7 @@ const categoryRoutes = require('./routes/categories');
 const budgetRoutes = require('./routes/budget');
 const analyticsRoutes = require('./routes/analytics');
 const laporanRoutes = require('./routes/laporan');
+const ocrRoutes = require('./routes/ocr');
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
@@ -74,6 +75,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/laporan', laporanRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // Root Route
 app.get('/', (req, res) => {
