@@ -7,6 +7,9 @@ const { successResponse, errorResponse } = require('../utils/helpers');
 exports.getAllCategories = async (req, res) => {
   try {
     const categories = await db.categories.findMany({
+      where: {
+        deleted_at: null
+      },
       select: {
         category_id: true,
         name_category: true
