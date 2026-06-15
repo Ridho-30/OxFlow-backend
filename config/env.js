@@ -8,5 +8,6 @@ module.exports = {
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'super_secret_refresh_key_min_32_characters',
   JWT_EXPIRE: process.env.JWT_EXPIRE || '1h',
   JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '7d',
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*'
+  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
+  APP_DEEP_LINK_SCHEME: process.env.APP_DEEP_LINK_SCHEME || 'oxflow://reset-password'
 };

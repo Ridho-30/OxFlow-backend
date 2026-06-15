@@ -210,7 +210,13 @@ exports.forgotPassword = async (req, res) => {
     );
 
     // Buat reset link
-    const resetLink = `https://oxflow-app.vercel.app/reset-password?token=${resetToken}`;
+    const scheme = env.APP_DEEP_LINK_SCHEME || 'oxflow://reset-password';
+    const resetLink = `${scheme}?token=${resetToken}`;
+
+    // Logging untuk memudahkan debugging
+    console.log(`[AUTH] Generate Reset Password Link for ${user.email}:`);
+    console.log(`[AUTH] Token: ${resetToken}`);
+    console.log(`[AUTH] Complete Link: ${resetLink}`);
 
     // Template email
     const emailHtml = `
@@ -234,7 +240,7 @@ exports.forgotPassword = async (req, res) => {
             <a href="${resetLink}" class="button">Reset Password</a>
             <p><strong>Link berlaku selama 15 menit.</strong></p>
             <p>Jika Anda tidak meminta reset password, abaikan email ini dan password Anda tetap aman.</p>
-            <p>Atau copy link ini ke browser: <br/>${resetLink}</p>
+            <p>Jika tombol tidak berfungsi, Anda juga bisa menyalin link berikut: <br/>${resetLink}</p>
             <div class="footer">
               <p>© 2026 OxFlow - Aplikasi Pencatatan Keuangan Digital</p>
             </div>
@@ -266,7 +272,8 @@ exports.forgotPassword = async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 exports.resetPassword = async (req, res) => {
   try {
-    const { token, new_password } = req.body;
+    const token = req.body.token;
+    const new_password = req.body.newPassword || req.body.new_password;
 
     // Validasi input
     const errors = [];
