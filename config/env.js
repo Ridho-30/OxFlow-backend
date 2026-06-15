@@ -9,5 +9,5 @@ module.exports = {
   JWT_EXPIRE: process.env.JWT_EXPIRE || '1h',
   JWT_REFRESH_EXPIRE: process.env.JWT_REFRESH_EXPIRE || '7d',
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-  APP_DEEP_LINK_SCHEME: process.env.APP_DEEP_LINK_SCHEME || 'oxflow://reset-password'
+  APP_RESET_PASSWORD_URL: process.env.APP_RESET_PASSWORD_URL || 'https://ox-flow-backend.vercel.app/reset-password'
 };

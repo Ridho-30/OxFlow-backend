@@ -210,8 +210,8 @@ exports.forgotPassword = async (req, res) => {
     );
 
     // Buat reset link
-    const scheme = env.APP_DEEP_LINK_SCHEME || 'oxflow://reset-password';
-    const resetLink = `${scheme}?token=${resetToken}`;
+    const baseUrl = env.APP_RESET_PASSWORD_URL || 'https://ox-flow-backend.vercel.app/reset-password';
+    const resetLink = `${baseUrl}?token=${resetToken}`;
 
     // Logging untuk memudahkan debugging
     console.log(`[AUTH] Generate Reset Password Link for ${user.email}:`);
