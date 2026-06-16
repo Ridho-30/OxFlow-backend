@@ -1,5 +1,7 @@
 const db = require('../config/database');
 const { successResponse, errorResponse, isNotFutureDate } = require('../utils/helpers');
+const { createClient } = require('@supabase/supabase-js');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
 
 // ─────────────────────────────────────────────────────────────
 // HELPER: Build response detail object
@@ -407,6 +409,36 @@ exports.deleteTransaction = async (req, res) => {
     return successResponse(res, 200, 'Transaksi berhasil dihapus');
   } catch (error) {
     console.error('ERROR deleteTransaction:', error);
+    return errorResponse(res, 500, 'Terjadi kesalahan pada server');
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// UPLOAD RECEIPT IMAGE
+// ─────────────────────────────────────────────────────────────
+exports.uploadReceipt = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    if (!req.file) {
+      return errorResponse(res, 400, 'Validasi gagal', ['Foto struk wajib diunggah']);
+    }
+
+    const fileExt = req.file.originalname.split('.').pop();
+    const fileName = `${userId}/${Date.now()}_${userId}.${fileExt}`;
+    
+    const { error } = await supabase.storage
+      .from('foto-transaksi')
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('foto-transaksi')
+      .getPublicUrl(fileName);
+
+    return successResponse(res, 200, 'Foto struk berhasil diunggah', { photoUrl: data.publicUrl });
+  } catch (error) {
+    console.error(error);
     return errorResponse(res, 500, 'Terjadi kesalahan pada server');
   }
 };

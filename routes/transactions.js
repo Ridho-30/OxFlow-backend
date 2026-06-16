@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const transactionController = require('../controllers/transactionController');
 const authMiddleware = require('../middleware/auth');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * @swagger
@@ -78,6 +80,30 @@ const authMiddleware = require('../middleware/auth');
  *         description: Token tidak valid atau tidak ditemukan
  */
 router.post('/', authMiddleware, transactionController.createTransaction);
+
+/**
+ * @swagger
+ * /api/transactions/upload-receipt:
+ *   post:
+ *     summary: Upload foto struk transaksi
+ *     tags: [Transactions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               receipt:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Foto berhasil diunggah
+ */
+router.post('/upload-receipt', authMiddleware, upload.single('receipt'), transactionController.uploadReceipt);
 
 /**
  * @swagger
