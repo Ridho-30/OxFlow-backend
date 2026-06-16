@@ -13,8 +13,12 @@ exports.getDashboard = async (req, res) => {
   try {
     const userId = req.user.user_id;
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0-indexed
+    
+    const yearQuery = parseInt(req.query.year);
+    const monthQuery = parseInt(req.query.month);
+
+    const year = yearQuery ? yearQuery : now.getFullYear();
+    const month = monthQuery ? monthQuery - 1 : now.getMonth(); // 0-indexed
 
     const startOfMonth = new Date(year, month, 1);
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
